@@ -1,0 +1,102 @@
+#include <avr/io.h>
+#include <avr/interrupt.h>
+#include <util/delay.h>
+
+
+
+
+#define Trigger_pin PB4 // trigger pin
+#define eco_pin PL0 //eco pin
+#define Trigger_pin2 PB5
+#define eco_pin2 PL1
+#define led1 PB2
+#define led2 PL7
+int OverflowCounter = 0;
+int OverflowCounter2 = 0;
+
+ISR(TIMER4_OVF_vect)
+{
+OverflowCounter++;
+}
+ISR(TIMER5_OVF_vect)
+{
+OverflowCounter2++;
+}
+
+int main(void)
+{
+
+
+double distance;
+long counter;
+double distance2;
+long counter2;
+
+DDRB|=(1<<4); //trigger pin
+PORTL|=(1<<0); //eco pin
+
+DDRB|=(1<<5);
+PORTL|=(1<<10);
+
+sei();
+TCCR4A = 0; 
+TCCR5A = 0;
+
+TIMSK4 = (1 << TOIE4); 
+TIMSK5 = (1 << TOIE5);
+
+
+
+while(1)
+{
+PORTB |= (1 << Trigger_pin); 
+_delay_us(10);
+PORTB &= (~(1 << Trigger_pin));
+
+TCNT4 = 0; 
+TCCR4B = 0x41; 
+TIFR4 = 1<<ICF4; 
+TIFR4 = 1<<TOV4; 
+
+while ((TIFR4 & (1 << ICF4)) == 0); 
+TCNT4 = 0; 
+TCCR4B = 0x01; 
+TIFR4 = 1<<ICF4; 
+TIFR4 = 1<<TOV4; 
+OverflowCounter = 0;
+
+while ((TIFR4 & (1 << ICF4)) == 0); 
+counter = ICR4 + (65535 * OverflowCounter);
+distance = (double)counter/932.94; 
+
+
+PORTB|= (1<< Trigger_pin2);
+_delay_us(10);
+PORTB&= (~(1 << Trigger_pin2));
+
+
+TCNT5 = 0; 
+TCCR5B = 0x41; 
+TIFR5 = 1<<ICF5; 
+TIFR5 = 1<<TOV5; 
+
+
+
+while ((TIFR5 & (1 << ICF5)) == 0); 
+TCNT5 = 0; 
+TCCR5B = 0x01; 
+TIFR5 = 1<<ICF5; 
+TIFR5 = 1<<TOV5; 
+OverflowCounter2 = 0;
+
+
+while ((TIFR5 & (1 << ICF5)) == 0); 
+counter2 = ICR5 + (65535 * OverflowCounter2);
+distance2 = (double)counter2/932.94; 
+
+
+
+
+
+}
+}
